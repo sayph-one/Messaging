@@ -29,7 +29,7 @@
     </plurals>
     <!-- New conversation -->
     <string name="new_conversation">New conversation</string>
-    <string name="add_contact_or_number">Add Contact or Number…</string>
+    <string name="add_contact_or_number">Add Contact…</string>
     <string name="suggestions">Suggestions</string>
     <!-- Group conversation -->
     <string name="members">Members</string>

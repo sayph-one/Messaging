@@ -81,18 +81,22 @@ class NewConversationActivity : SimpleActivity() {
             filteredContacts.sortWith(compareBy { !it.name.startsWith(searchString, true) })
             setupAdapter(filteredContacts)
 
-            binding.newConversationConfirm.beVisibleIf(searchString.length > 2)
+//            binding.newConversationConfirm.beVisibleIf(searchString.length > 2)
         }
 
         binding.newConversationConfirm.applyColorFilter(getProperTextColor())
         binding.newConversationConfirm.setOnClickListener {
             val number = binding.newConversationAddress.value
-            if (isShortCodeWithLetters(number)) {
-                binding.newConversationAddress.setText("")
-                toast(R.string.invalid_short_code, length = Toast.LENGTH_LONG)
-                return@setOnClickListener
+            val matchedContact = allContacts.firstOrNull { contact ->
+                contact.phoneNumbers.any { it.normalizedNumber == number || it.value == number }
             }
-            launchThreadActivity(number, number)
+
+            if (matchedContact != null) {
+                launchThreadActivity(number, matchedContact.name)
+            } else {
+                toast("You can only message saved contacts.")
+                binding.newConversationAddress.setText("")
+            }
         }
 
         binding.noContactsPlaceholder2.setOnClickListener {
@@ -109,6 +113,12 @@ class NewConversationActivity : SimpleActivity() {
         binding.contactsLetterFastscrollerThumb.setupWithFastScroller(binding.contactsLetterFastscroller)
         binding.contactsLetterFastscrollerThumb.textColor = properPrimaryColor.getContrastColor()
         binding.contactsLetterFastscrollerThumb.thumbColor = properPrimaryColor.getColorStateList()
+
+        binding.newConversationConfirm.apply {
+            beGone()
+            isEnabled = false
+            isClickable = false
+        }
     }
 
     private fun isThirdPartyIntent(): Boolean {

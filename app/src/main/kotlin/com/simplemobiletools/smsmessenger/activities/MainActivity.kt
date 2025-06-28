@@ -151,7 +151,7 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun setupOptionsMenu() {
-        binding.mainMenu.getToolbar().inflateMenu(R.menu.menu_main)
+//        binding.mainMenu.getToolbar().inflateMenu(R.menu.menu_main)
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
 
@@ -184,10 +184,11 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun refreshMenuItems() {
-        binding.mainMenu.getToolbar().menu.apply {
-            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(com.simplemobiletools.commons.R.bool.hide_google_relations)
-            findItem(R.id.show_recycle_bin).isVisible = config.useRecycleBin
-            findItem(R.id.show_archived).isVisible = config.isArchiveAvailable
+        val menu = binding.mainMenu.getToolbar().menu ?: return
+        menu.apply {
+            findItem(R.id.more_apps_from_us)?.isVisible = !resources.getBoolean(com.simplemobiletools.commons.R.bool.hide_google_relations)
+            findItem(R.id.show_recycle_bin)?.isVisible = config.useRecycleBin
+            findItem(R.id.show_archived)?.isVisible = config.isArchiveAvailable
         }
     }
 

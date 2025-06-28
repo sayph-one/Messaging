@@ -25,10 +25,7 @@ import android.text.format.DateUtils.FORMAT_NO_YEAR
 import android.text.format.DateUtils.FORMAT_SHOW_DATE
 import android.text.format.DateUtils.FORMAT_SHOW_TIME
 import android.util.TypedValue
-import android.view.Gravity
-import android.view.KeyEvent
-import android.view.View
-import android.view.WindowManager
+import android.view.*
 import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
@@ -125,6 +122,8 @@ class ThreadActivity : SimpleActivity() {
         setContentView(binding.root)
         setupOptionsMenu()
         refreshMenuItems()
+        invalidateOptionsMenu()
+
 
         updateMaterialActivityViews(binding.threadCoordinator, null, useTransparentNavigation = false, useTopSearchMenu = false)
         setupMaterialScrollListener(null, binding.threadToolbar)
@@ -257,8 +256,9 @@ class ThreadActivity : SimpleActivity() {
             findItem(R.id.unarchive).isVisible = threadItems.isNotEmpty() && conversation?.isArchived == true && !isRecycleBin && archiveAvailable
             findItem(R.id.rename_conversation).isVisible = participants.size > 1 && conversation != null && !isRecycleBin
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
-            findItem(R.id.block_number).title = addLockedLabelIfNeeded(com.simplemobiletools.commons.R.string.block_number)
-            findItem(R.id.block_number).isVisible = isNougatPlus() && !isRecycleBin
+            findItem(R.id.block_number).isVisible = false
+//            findItem(R.id.block_number).title = addLockedLabelIfNeeded(com.simplemobiletools.commons.R.string.block_number)
+//            findItem(R.id.block_number).isVisible = isNougatPlus() && !isRecycleBin
             findItem(R.id.dial_number).isVisible = participants.size == 1 && !isSpecialNumber() && !isRecycleBin
             findItem(R.id.manage_people).isVisible = !isSpecialNumber() && !isRecycleBin
             findItem(R.id.mark_as_unread).isVisible = threadItems.isNotEmpty() && !isRecycleBin
