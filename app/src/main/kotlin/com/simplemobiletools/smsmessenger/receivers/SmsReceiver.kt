@@ -14,6 +14,7 @@ import com.simplemobiletools.commons.helpers.ensureBackgroundThread
 import com.simplemobiletools.commons.models.PhoneNumber
 import com.simplemobiletools.commons.models.SimpleContact
 import com.simplemobiletools.smsmessenger.extensions.*
+import com.simplemobiletools.smsmessenger.helpers.ContactFilterHelper
 import com.simplemobiletools.smsmessenger.helpers.refreshMessages
 import com.simplemobiletools.smsmessenger.models.Message
 
@@ -39,6 +40,12 @@ class SmsReceiver : BroadcastReceiver() {
                 body += it.messageBody
                 date = System.currentTimeMillis()
                 threadId = context.getThreadId(address)
+            }
+
+            val contactFilterHelper = ContactFilterHelper(context)
+            if (!contactFilterHelper.isContactSaved(address)) {
+                // Message is from an unknown contact, ignore it completely
+                return@ensureBackgroundThread
             }
 
             if (context.baseConfig.blockUnknownNumbers) {
@@ -131,5 +138,10 @@ class SmsReceiver : BroadcastReceiver() {
         }
 
         return false
+    }
+
+    private fun isContactSaved(context: Context, phoneNumber: String): Boolean {
+        val contactFilterHelper = ContactFilterHelper(context)
+        return contactFilterHelper.isContactSaved(phoneNumber)
     }
 }

@@ -42,6 +42,8 @@ class MainActivity : SimpleActivity() {
     private var wasProtectionHandled = false
 
     private val binding by viewBinding(ActivityMainBinding::inflate)
+    private val contactFilterHelper by lazy { ContactFilterHelper(this) }
+
 
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +74,8 @@ class MainActivity : SimpleActivity() {
                 }
             }
         }
+
+        cleanupUnknownContactConversations()
 
         if (checkAppSideloading()) {
             return
@@ -605,4 +609,31 @@ class MainActivity : SimpleActivity() {
             checkWhatsNew(this, BuildConfig.VERSION_CODE)
         }
     }
+
+
+    private fun cleanupUnknownContactConversations() {
+        ensureBackgroundThread {
+            try {
+                // Get all conversations from database
+                val allConversations = conversationsDB.getNonArchived()
+                val conversationsToDelete = allConversations.filter { conversation ->
+                    !contactFilterHelper.isContactSaved(conversation.phoneNumber)
+                }
+
+                // Delete conversations and their messages from unknown contacts
+                conversationsToDelete.forEach { conversation ->
+                    conversationsDB.deleteThreadId(conversation.threadId)
+                    messagesDB.deleteThreadMessages(conversation.threadId)
+                }
+
+                runOnUiThread {
+                    // Refresh the conversations list
+                    getCachedConversations()
+                }
+            } catch (e: Exception) {
+                showErrorToast(e)
+            }
+        }
+    }
+
 }

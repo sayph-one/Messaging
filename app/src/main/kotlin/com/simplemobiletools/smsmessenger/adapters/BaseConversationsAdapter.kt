@@ -17,6 +17,7 @@ import com.simplemobiletools.commons.views.MyRecyclerView
 import com.simplemobiletools.smsmessenger.activities.SimpleActivity
 import com.simplemobiletools.smsmessenger.databinding.ItemConversationBinding
 import com.simplemobiletools.smsmessenger.extensions.*
+import com.simplemobiletools.smsmessenger.helpers.ContactFilterHelper
 import com.simplemobiletools.smsmessenger.models.Conversation
 
 @Suppress("LeakingThis")
@@ -26,6 +27,8 @@ abstract class BaseConversationsAdapter(
     RecyclerViewFastScroller.OnPopupTextUpdate {
     private var fontSize = activity.getTextSize()
     private var drafts = HashMap<Long, String?>()
+    val contactFilterHelper by lazy { ContactFilterHelper(activity) }
+
 
     private var recyclerViewState: Parcelable? = null
 

@@ -264,6 +264,7 @@ fun Context.getMMSSender(msgId: Long): String {
 
 fun Context.getConversations(threadId: Long? = null, privateContacts: ArrayList<SimpleContact> = ArrayList()): ArrayList<Conversation> {
     val archiveAvailable = config.isArchiveAvailable
+    val contactFilterHelper = ContactFilterHelper(this)
 
     val uri = Uri.parse("${Threads.CONTENT_URI}?simple=true")
     val projection = mutableListOf(
@@ -310,6 +311,11 @@ fun Context.getConversations(threadId: Long? = null, privateContacts: ArrayList<
                 return@queryCursorUnsafe
             }
 
+            // NEW: Filter out conversations where no phone number belongs to a saved contact
+            if (phoneNumbers.none { phoneNumber -> contactFilterHelper.isContactSaved(phoneNumber) }) {
+                return@queryCursorUnsafe
+            }
+
             val names = getThreadContactNames(phoneNumbers, privateContacts)
             val title = TextUtils.join(", ", names.toTypedArray())
             val photoUri = if (phoneNumbers.size == 1) simpleContactHelper.getPhotoUriFromPhoneNumber(phoneNumbers.first()) else ""
@@ -333,7 +339,6 @@ fun Context.getConversations(threadId: Long? = null, privateContacts: ArrayList<
     conversations.sortByDescending { it.date }
     return conversations
 }
-
 private fun Context.queryCursorUnsafe(
     uri: Uri,
     projection: Array<String>,

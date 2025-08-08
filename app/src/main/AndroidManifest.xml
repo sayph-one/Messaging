@@ -43,7 +43,7 @@
 
         <activity
             android:name=".activities.SplashActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/SplashTheme" />
 
         <activity
@@ -454,7 +454,7 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".activities.SplashActivity.Orange"
+            android:name=".activities.SplashActivity"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"

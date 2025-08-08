@@ -14,15 +14,16 @@ class App : Application() {
         super.onCreate()
 
         val config = BaseConfig(this)
-        config.primaryColor = "#132d4d".toColorInt()
-        config.appIconColor = "#132d4d".toColorInt()
+//        config.primaryColor = "#132d4d".toColorInt()
+//        config.appIconColor = "#132d4d".toColorInt()
 
         val prefs = getSharedPreferences("BaseConfig", MODE_PRIVATE)
         prefs.edit()
-            .putBoolean("block_unknown_numbers", false)
-            .putBoolean("block_hidden_numbers", false)
-            .putInt("primary_color", "#132d4d".toColorInt())
-            .putInt("app_icon_color", "#132d4d".toColorInt())
+            .putBoolean("block_unknown_numbers", true)
+            .putBoolean("block_hidden_numbers", true)
+            .putBoolean("filter_contacts_only", true)
+//            .putInt("primary_color", "#132d4d".toColorInt())
+//            .putInt("app_icon_color", "#132d4d".toColorInt())
             .apply()
 
 

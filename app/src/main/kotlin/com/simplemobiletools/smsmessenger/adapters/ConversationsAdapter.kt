@@ -290,4 +290,11 @@ class ConversationsAdapter(
             finishActMode()
         }
     }
+
+    private fun filterSavedContactsOnly(conversations: ArrayList<Conversation>): ArrayList<Conversation> {
+        return conversations.filter { conversation ->
+            // Check if the phone number belongs to a saved contact
+            contactFilterHelper.isContactSaved(conversation.phoneNumber)
+        } as ArrayList<Conversation>
+    }
 }
