@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Jednostavan SMS messenger</string>
-    <string name="app_launcher_name">SMS messenger</string>
+    <string name="app_launcher_name">Messenger</string>
     <string name="type_a_message">Upiši poruku…</string>
     <string name="message_not_sent_short">Poruka nije poslana</string>
     <string name="message_not_sent_touch_retry">Nije poslana. Dodirni za ponovni pokušaj.</string>
