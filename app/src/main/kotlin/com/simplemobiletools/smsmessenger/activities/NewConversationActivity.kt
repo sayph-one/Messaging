@@ -3,6 +3,7 @@ package com.simplemobiletools.smsmessenger.activities
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
 import com.google.gson.Gson
@@ -131,10 +132,31 @@ class NewConversationActivity : SimpleActivity() {
         return false
     }
 
+
     private fun fetchContacts() {
+        val contactFilterHelper = ContactFilterHelper(this)
+
         fillSuggestedContacts {
-            SimpleContactsHelper(this).getAvailableContacts(false) {
-                allContacts = it
+            SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
+                // Filter out SIM contacts
+                Log.d("ContactDebug", "Total contacts before filtering: ${contacts.size}")
+
+                allContacts = contacts.filter { contact ->
+                    // Check if any phone number for this contact is saved to device (not SIM)
+                    val hasDeviceNumber = contact.phoneNumbers.any { phoneNumber ->
+                        val isDeviceContact = contactFilterHelper.isContactSaved(phoneNumber.normalizedNumber)
+                        Log.d("ContactDebug", "Contact: ${contact.name}, Number: ${phoneNumber.normalizedNumber}, IsDevice: $isDeviceContact")
+                        isDeviceContact
+                    }
+
+                    if (!hasDeviceNumber) {
+                        Log.d("ContactDebug", "Filtering out SIM contact: ${contact.name}")
+                    }
+
+                    hasDeviceNumber
+                } as ArrayList<SimpleContact>
+
+                Log.d("ContactDebug", "Total contacts after filtering: ${allContacts.size}")
 
                 if (privateContacts.isNotEmpty()) {
                     allContacts.addAll(privateContacts)
@@ -204,8 +226,30 @@ class NewConversationActivity : SimpleActivity() {
 
     private fun fillSuggestedContacts(callback: () -> Unit) {
         val privateCursor = getMyContactsCursor(false, true)
+        val contactFilterHelper = ContactFilterHelper(this)
+
         ensureBackgroundThread {
-            privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+            val allPrivateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+
+            // Filter out SIM contacts from private contacts too
+            Log.d("ContactDebug", "Private contacts before filtering: ${allPrivateContacts.size}")
+
+            privateContacts = allPrivateContacts.filter { contact ->
+                val hasDeviceNumber = contact.phoneNumbers.any { phoneNumber ->
+                    val isDeviceContact = contactFilterHelper.isContactSaved(phoneNumber.normalizedNumber)
+                    Log.d("ContactDebug", "Private Contact: ${contact.name}, Number: ${phoneNumber.normalizedNumber}, IsDevice: $isDeviceContact")
+                    isDeviceContact
+                }
+
+                if (!hasDeviceNumber) {
+                    Log.d("ContactDebug", "Filtering out SIM private contact: ${contact.name}")
+                }
+
+                hasDeviceNumber
+            } as ArrayList<SimpleContact>
+
+            Log.d("ContactDebug", "Private contacts after filtering: ${privateContacts.size}")
+
             val suggestions = getSuggestedContacts(privateContacts)
             runOnUiThread {
                 binding.suggestionsHolder.removeAllViews()
