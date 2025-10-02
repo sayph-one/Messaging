@@ -1390,6 +1390,17 @@ class ThreadActivity : SimpleActivity() {
         try {
             refreshedSinceSent = false
             sendMessageCompat(text, addresses, subscriptionId, attachments, messageToResend)
+
+            addresses.forEach { address ->
+                MessageSyncHelper.logMessage(
+                    context = this,
+                    address = address,
+                    body = text,
+                    direction = "outbound",
+                    timestamp = System.currentTimeMillis()
+                )
+            }
+
             ensureBackgroundThread {
                 val messageIds = messages.map { it.id }
                 val messages = getMessages(threadId, getImageResolutions = true, limit = maxOf(1, attachments.size))

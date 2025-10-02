@@ -31,6 +31,10 @@
 
     <uses-feature android:name="android.hardware.telephony" />
 
+    <permission
+        android:name="com.simplemobiletools.smsmessenger.PENDING_SYNC_PERMISSION"
+        android:protectionLevel="signature" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -244,6 +248,15 @@
         </receiver>
 
         <receiver
+            android:name=".receivers.IncomingSmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".receivers.ScheduledMessageReceiver"
             android:exported="false" />
 
@@ -256,6 +269,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+
+        <!-- For debug builds -->
+        <provider
+            android:name=".providers.PendingSyncProvider"
+            android:authorities="${applicationId}.pendingsync"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:readPermission="com.simplemobiletools.smsmessenger.PENDING_SYNC_PERMISSION" />
 
         <activity-alias
             android:name=".activities.SplashActivity.Red"
