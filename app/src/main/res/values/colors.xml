@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <color name="brand_primary">#FE5757</color>
+    <color name="brand_dark_blue">#132d4d</color>
+    <color name="brand_light">#fe8a8a</color>
+    <color name="brand_accent">#fe2424</color>
+    <color name="brand_blue">#1d4576</color>
+    <color name="brand_darkest_blue">#091524</color>
 </resources>

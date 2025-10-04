@@ -2,6 +2,10 @@
 
     <style name="AppTheme" parent="AppTheme.Base" />
 
+    <style name="SplashTheme" parent="AppTheme.Base">
+        <item name="android:windowBackground">@color/brand_dark_blue</item>
+    </style>
+
     <style name="roundedImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/normal_margin</item>
