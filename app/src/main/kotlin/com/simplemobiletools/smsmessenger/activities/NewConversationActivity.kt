@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
-import android.widget.Toast
 import com.google.gson.Gson
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.simplemobiletools.commons.dialogs.RadioGroupDialog
@@ -21,6 +20,7 @@ import com.simplemobiletools.smsmessenger.extensions.getSuggestedContacts
 import com.simplemobiletools.smsmessenger.extensions.getThreadId
 import com.simplemobiletools.smsmessenger.helpers.*
 import com.simplemobiletools.smsmessenger.messaging.isShortCodeWithLetters
+import android.widget.Toast
 import java.net.URLDecoder
 import java.util.Locale
 
@@ -297,9 +297,41 @@ class NewConversationActivity : SimpleActivity() {
         val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: intent.getStringExtra("sms_body") ?: ""
         val numbers = phoneNumber.split(";").toSet()
         val number = if (numbers.size == 1) phoneNumber else Gson().toJson(numbers)
+
+        // Check if there are attachments being shared
+        val hasAttachments = (intent.action == Intent.ACTION_SEND && intent.extras?.containsKey(Intent.EXTRA_STREAM) == true) ||
+                            (intent.action == Intent.ACTION_SEND_MULTIPLE && intent.extras?.containsKey(Intent.EXTRA_STREAM) == true)
+
+        // If there are attachments, check MMS permissions
+        if (hasAttachments) {
+            ensureBackgroundThread {
+                val phoneNumbersList = numbers.toList()
+                Log.d("NewConversationActivity", "Checking MMS permissions for: $phoneNumbersList (from: $phoneNumber)")
+                val isMmsAllowed = MmsPermissionHelper.isMmsAllowedForContacts(this, phoneNumbersList)
+                Log.d("NewConversationActivity", "MMS permission result: $isMmsAllowed")
+
+                runOnUiThread {
+                    if (!isMmsAllowed) {
+                        toast(R.string.mms_not_allowed_for_contact)
+                        Log.w("NewConversationActivity", "Blocking MMS share - no permission for $phoneNumbersList")
+                        finish()
+                        return@runOnUiThread
+                    }
+
+                    // MMS is allowed, proceed with launching ThreadActivity
+                    startThreadActivityWithIntent(numbers, number, text)
+                }
+            }
+        } else {
+            // No attachments, proceed normally
+            startThreadActivityWithIntent(numbers, number, text)
+        }
+    }
+
+    private fun startThreadActivityWithIntent(numbers: Set<String>, number: String, text: String) {
         Intent(this, ThreadActivity::class.java).apply {
             putExtra(THREAD_ID, getThreadId(numbers))
-            putExtra(THREAD_TITLE, name)
+            putExtra(THREAD_TITLE, binding.newConversationAddress.value)
             putExtra(THREAD_TEXT, text)
             putExtra(THREAD_NUMBER, number)
 

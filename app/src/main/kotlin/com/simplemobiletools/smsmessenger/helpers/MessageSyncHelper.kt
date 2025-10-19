@@ -56,6 +56,7 @@ object MessageSyncHelper {
         address: String,
         body: String,
         direction: String, // "inbound" or "outbound"
+        msgType: String = "sms", // "sms" or "mms"
         timestamp: Long = System.currentTimeMillis()
     ) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -66,7 +67,7 @@ object MessageSyncHelper {
                     timeUtc = formatDateToISO8601(timestamp),
                     msgWith = address,
                     msgDetails = body,
-                    msgType = "sms",
+                    msgType = msgType,
                     msgDirection = direction,
                     synced = false,
                     timestamp = timestamp
@@ -74,7 +75,7 @@ object MessageSyncHelper {
 
                 val messageId = db.pendingMessageDao().insert(pendingMessage)
 
-                Log.d(TAG, "Logged message for sync: id=$messageId, direction=$direction, address=$address")
+                Log.d(TAG, "Logged message for sync: id=$messageId, type=$msgType, direction=$direction, address=$address")
 
                 // Notify agent app that a new message has been logged
                 notifyAgentApp(context, messageId)

@@ -107,6 +107,7 @@ class ThreadActivity : SimpleActivity() {
     private lateinit var scheduledDateTime: DateTime
 
     private var isAttachmentPickerVisible = false
+    private var isMmsAllowedForParticipants = false
 
     private val binding by viewBinding(ActivityThreadBinding::inflate)
 
@@ -735,14 +736,9 @@ class ThreadActivity : SimpleActivity() {
                 window.decorView.requestApplyInsets()
             }
 
-            if (intent.extras?.containsKey(THREAD_ATTACHMENT_URI) == true) {
-                val uri = Uri.parse(intent.getStringExtra(THREAD_ATTACHMENT_URI))
-                addAttachment(uri)
-            } else if (intent.extras?.containsKey(THREAD_ATTACHMENT_URIS) == true) {
-                (intent.getSerializableExtra(THREAD_ATTACHMENT_URIS) as? ArrayList<Uri>)?.forEach {
-                    addAttachment(it)
-                }
-            }
+            // Note: Attachments from intent are now processed after MMS permissions are checked
+            // This is handled in setupParticipants() -> checkMmsPermissions() -> processIntentAttachments()
+
             scrollToBottomFab.setOnClickListener {
                 scrollToBottom()
             }
@@ -814,6 +810,54 @@ class ThreadActivity : SimpleActivity() {
             runOnUiThread {
                 maybeDisableShortCodeReply()
             }
+        }
+
+        // Check MMS permissions after participants are set
+        checkMmsPermissions()
+    }
+
+    private fun checkMmsPermissions() {
+        if (participants.isEmpty()) {
+            isMmsAllowedForParticipants = false
+            return
+        }
+
+        ensureBackgroundThread {
+            val phoneNumbers = participants.getAddresses()
+            isMmsAllowedForParticipants = MmsPermissionHelper.isMmsAllowedForContacts(this, phoneNumbers)
+
+            runOnUiThread {
+                updateMmsUiVisibility()
+
+                // Process intent attachments after MMS permissions are verified
+                processIntentAttachments()
+            }
+        }
+    }
+
+    private fun processIntentAttachments() {
+        // Process attachments from share intent (e.g., GIF from Samsung keyboard)
+        if (intent.extras?.containsKey(THREAD_ATTACHMENT_URI) == true) {
+            val uri = Uri.parse(intent.getStringExtra(THREAD_ATTACHMENT_URI))
+            addAttachment(uri)
+            intent.removeExtra(THREAD_ATTACHMENT_URI)  // Remove to prevent re-processing
+        } else if (intent.extras?.containsKey(THREAD_ATTACHMENT_URIS) == true) {
+            (intent.getSerializableExtra(THREAD_ATTACHMENT_URIS) as? ArrayList<Uri>)?.forEach {
+                addAttachment(it)
+            }
+            intent.removeExtra(THREAD_ATTACHMENT_URIS)  // Remove to prevent re-processing
+        }
+    }
+
+    private fun updateMmsUiVisibility() {
+        // Update attachment button visibility
+        binding.messageHolder.threadAddAttachment.isEnabled = isMmsAllowedForParticipants
+        binding.messageHolder.threadAddAttachment.alpha = if (isMmsAllowedForParticipants) 1.0f else 0.4f
+
+        // If MMS is not allowed and attachments exist, show a warning
+        if (!isMmsAllowedForParticipants && getAttachmentSelections().isNotEmpty()) {
+            getAttachmentsAdapter()?.clear()
+            toast(R.string.mms_not_allowed_for_contact)
         }
     }
 
@@ -1049,6 +1093,9 @@ class ThreadActivity : SimpleActivity() {
         participants.add(contact)
         showSelectedContacts()
         updateMessageType()
+
+        // Recheck MMS permissions when participants change
+        checkMmsPermissions()
     }
 
     private fun markAsUnread() {
@@ -1243,6 +1290,12 @@ class ThreadActivity : SimpleActivity() {
     private fun getAttachmentSelections() = getAttachmentsAdapter()?.attachments ?: emptyList()
 
     private fun addAttachment(uri: Uri) {
+        // Check MMS permission before allowing attachment
+        if (!isMmsAllowedForParticipants) {
+            toast(R.string.mms_not_allowed_for_contact)
+            return
+        }
+
         val id = uri.toString()
         if (getAttachmentSelections().any { it.id == id }) {
             toast(R.string.duplicate_item_warning)
@@ -1387,6 +1440,33 @@ class ThreadActivity : SimpleActivity() {
         val addresses = participants.getAddresses()
         val attachments = buildMessageAttachments()
 
+        // PRE-SEND CHECK: Verify MMS permissions in real-time before sending
+        // This ensures permissions are current even if they changed while user was typing
+        if (isMmsMessage(text)) {
+            ensureBackgroundThread {
+                val currentMmsPermission = MmsPermissionHelper.isMmsAllowedForContacts(this, addresses)
+
+                runOnUiThread {
+                    if (!currentMmsPermission) {
+                        toast(R.string.mms_not_allowed_for_contact)
+                        // Update cached permission state
+                        isMmsAllowedForParticipants = false
+                        updateMmsUiVisibility()
+                        return@runOnUiThread
+                    }
+
+                    // Permission verified, proceed with send
+                    executeSendMessage(text, addresses, subscriptionId, attachments)
+                }
+            }
+            return
+        }
+
+        // SMS (no attachments), send directly
+        executeSendMessage(text, addresses, subscriptionId, attachments)
+    }
+
+    private fun executeSendMessage(text: String, addresses: List<String>, subscriptionId: Int, attachments: List<Attachment>) {
         try {
             refreshedSinceSent = false
             sendMessageCompat(text, addresses, subscriptionId, attachments, messageToResend)
@@ -1397,6 +1477,7 @@ class ThreadActivity : SimpleActivity() {
                     address = address,
                     body = text,
                     direction = "outbound",
+                    msgType = if (isMmsMessage(text)) "mms" else "sms",
                     timestamp = System.currentTimeMillis()
                 )
             }
@@ -1496,6 +1577,9 @@ class ThreadActivity : SimpleActivity() {
         participants = participants.filter { it.rawId != id }.toMutableList() as ArrayList<SimpleContact>
         showSelectedContacts()
         updateMessageType()
+
+        // Recheck MMS permissions when participants change
+        checkMmsPermissions()
     }
 
     private fun getPhoneNumbersFromIntent(): ArrayList<String> {

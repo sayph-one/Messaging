@@ -123,6 +123,8 @@
     <string name="invalid_short_code">Can\'t reply to short codes like this</string>
     <string name="invalid_short_code_desc">You can only reply to short codes with numbers like \"503501\" but not to codes containing letters and numbers like \"AB-CD0\".</string>
     <string name="attachment_sized_exceeds_max_limit">Attachment size exceeds max MMS limit</string>
+    <string name="mms_not_allowed_for_contact">MMS is not allowed for this contact</string>
+    <string name="mms_blocked_by_policy">Cannot send MMS - contact does not have MMS permission</string>
     <string name="sim_card_not_available">SIM card not available</string>
     <string name="couldnt_download_mms">Couldn\'t download MMS</string>
     <!-- FAQ -->
