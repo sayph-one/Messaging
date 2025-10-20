@@ -29,8 +29,8 @@ ez-vcard = "0.11.3"
 shortcut-badger = "1.1.22"
 #versioning
 app-version-appId = "com.simplemobiletools.smsmessenger"
-app-version-versionCode = "92" # update this for increment version knox
-app-version-versionName = "5.19.5"
+app-version-versionCode = "96" # update this for increment version knox
+app-version-versionName = "5.19.9"
 [libraries]
 #AndroidX
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }

@@ -17,6 +17,8 @@ import com.simplemobiletools.smsmessenger.extensions.getLatestMMS
 import com.simplemobiletools.smsmessenger.extensions.insertOrUpdateConversation
 import com.simplemobiletools.smsmessenger.extensions.showReceivedMessageNotification
 import com.simplemobiletools.smsmessenger.extensions.updateUnreadCountBadge
+import com.simplemobiletools.smsmessenger.helpers.MessageSyncHelper
+import com.simplemobiletools.smsmessenger.helpers.MmsPermissionHelper
 import com.simplemobiletools.smsmessenger.helpers.refreshMessages
 
 // more info at https://github.com/klinker41/android-smsmms
@@ -24,12 +26,26 @@ class MmsReceiver : MmsReceivedReceiver() {
 
     override fun isAddressBlocked(context: Context, address: String): Boolean {
         val normalizedAddress = address.normalizePhoneNumber()
-        return context.isNumberBlocked(normalizedAddress)
+
+        // Check if number is blocked in the standard way
+        if (context.isNumberBlocked(normalizedAddress)) {
+            return true
+        }
+
+        // Check if MMS is allowed for this contact via SayphAgent
+        // Return true (blocked) if MMS is not allowed
+        return !MmsPermissionHelper.isMmsAllowedForContact(context, normalizedAddress)
     }
 
     override fun onMessageReceived(context: Context, messageUri: Uri) {
         val mms = context.getLatestMMS() ?: return
         val address = mms.getSender()?.phoneNumbers?.first()?.normalizedNumber ?: ""
+
+        // Check if MMS is allowed for this contact
+        if (!MmsPermissionHelper.isMmsAllowedForContact(context, address)) {
+            // Silently block the MMS - do not show notification or store in database
+            return
+        }
 
         val size = context.resources.getDimension(R.dimen.notification_large_icon_size).toInt()
         ensureBackgroundThread {
@@ -43,6 +59,16 @@ class MmsReceiver : MmsReceivedReceiver() {
             } catch (e: Exception) {
                 null
             }
+
+            // Log the inbound MMS for sync
+            MessageSyncHelper.logMessage(
+                context = context,
+                address = address,
+                body = mms.body,
+                direction = "inbound",
+                msgType = "mms",
+                timestamp = System.currentTimeMillis()
+            )
 
             Handler(Looper.getMainLooper()).post {
                 context.showReceivedMessageNotification(mms.id, address, mms.body, mms.threadId, glideBitmap)
