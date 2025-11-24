@@ -57,7 +57,11 @@ object MessageSyncHelper {
         body: String,
         direction: String, // "inbound" or "outbound"
         msgType: String = "sms", // "sms" or "mms"
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        msgStatus: String? = null, // "sent", "failed", "received", "blocked"
+        errorCode: Int? = null, // Android error code for failed messages
+        seenByUser: Int? = null, // 0 or 1
+        systemMessageId: Long? = null // ID from Android SMS database
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -70,12 +74,16 @@ object MessageSyncHelper {
                     msgType = msgType,
                     msgDirection = direction,
                     synced = false,
-                    timestamp = timestamp
+                    timestamp = timestamp,
+                    msgStatus = msgStatus,
+                    errorCode = errorCode,
+                    seenByUser = seenByUser,
+                    systemMessageId = systemMessageId
                 )
 
                 val messageId = db.pendingMessageDao().insert(pendingMessage)
 
-                Log.d(TAG, "Logged message for sync: id=$messageId, type=$msgType, direction=$direction, address=$address")
+                Log.d(TAG, "Logged message for sync: id=$messageId, type=$msgType, direction=$direction, address=$address, status=$msgStatus")
 
                 // Notify agent app that a new message has been logged
                 notifyAgentApp(context, messageId)

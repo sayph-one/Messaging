@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
-import com.simplemobiletools.smsmessenger.helpers.MessageSyncHelper
 
 class IncomingSmsReceiver : BroadcastReceiver() {
     companion object {
@@ -19,19 +18,11 @@ class IncomingSmsReceiver : BroadcastReceiver() {
 
                 messages.forEach { smsMessage ->
                     val address = smsMessage.displayOriginatingAddress ?: ""
-                    val body = smsMessage.messageBody ?: ""
-                    val timestamp = smsMessage.timestampMillis
 
                     Log.d(TAG, "Received SMS from $address")
 
-                    // Log the message for sync
-                    MessageSyncHelper.logMessage(
-                        context = context,
-                        address = address,
-                        body = body,
-                        direction = "inbound",
-                        timestamp = timestamp
-                    )
+                    // Note: Message logging is handled by SmsReceiver after whitelist filtering
+                    // This receiver is only for early interception and logging
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to process incoming SMS", e)

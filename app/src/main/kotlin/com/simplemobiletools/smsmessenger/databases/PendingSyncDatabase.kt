@@ -2,6 +2,8 @@ package com.simplemobiletools.smsmessenger.databases
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Entity(tableName = "pending_messages")
 data class PendingMessage(
@@ -27,7 +29,20 @@ data class PendingMessage(
     val synced: Boolean = false,
 
     @ColumnInfo(name = "timestamp")
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+
+    // New fields for message status tracking
+    @ColumnInfo(name = "msg_status")
+    val msgStatus: String? = null, // "sent", "failed", "received", "blocked"
+
+    @ColumnInfo(name = "error_code")
+    val errorCode: Int? = null, // Android error code for failed messages
+
+    @ColumnInfo(name = "seen_by_user")
+    val seenByUser: Int? = null, // 0 or 1 (boolean)
+
+    @ColumnInfo(name = "system_message_id")
+    val systemMessageId: Long? = null // ID from Android SMS database for correlation
 )
 
 @Dao
@@ -48,13 +63,23 @@ interface PendingMessageDao {
     suspend fun getUnsyncedCount(): Int
 }
 
-@Database(entities = [PendingMessage::class], version = 1, exportSchema = true)
+@Database(entities = [PendingMessage::class], version = 2, exportSchema = true)
 abstract class PendingSyncDatabase : RoomDatabase() {
     abstract fun pendingMessageDao(): PendingMessageDao
 
     companion object {
         @Volatile
         private var INSTANCE: PendingSyncDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add new columns for message status tracking
+                database.execSQL("ALTER TABLE pending_messages ADD COLUMN msg_status TEXT DEFAULT NULL")
+                database.execSQL("ALTER TABLE pending_messages ADD COLUMN error_code INTEGER DEFAULT NULL")
+                database.execSQL("ALTER TABLE pending_messages ADD COLUMN seen_by_user INTEGER DEFAULT NULL")
+                database.execSQL("ALTER TABLE pending_messages ADD COLUMN system_message_id INTEGER DEFAULT NULL")
+            }
+        }
 
         fun getInstance(context: Context): PendingSyncDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -63,6 +88,7 @@ abstract class PendingSyncDatabase : RoomDatabase() {
                     PendingSyncDatabase::class.java,
                     "pending_sync_database"
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

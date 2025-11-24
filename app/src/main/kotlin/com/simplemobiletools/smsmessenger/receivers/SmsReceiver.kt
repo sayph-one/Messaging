@@ -15,6 +15,7 @@ import com.simplemobiletools.commons.models.PhoneNumber
 import com.simplemobiletools.commons.models.SimpleContact
 import com.simplemobiletools.smsmessenger.extensions.*
 import com.simplemobiletools.smsmessenger.helpers.ContactFilterHelper
+import com.simplemobiletools.smsmessenger.helpers.MessageSyncHelper
 import com.simplemobiletools.smsmessenger.helpers.refreshMessages
 import com.simplemobiletools.smsmessenger.models.Message
 
@@ -44,7 +45,15 @@ class SmsReceiver : BroadcastReceiver() {
 
             val contactFilterHelper = ContactFilterHelper(context)
             if (!contactFilterHelper.isContactSaved(address)) {
-                // Message is from an unknown contact, ignore it completely
+                // Message is from an unknown contact - log as blocked and ignore
+                MessageSyncHelper.logMessage(
+                    context = context,
+                    address = address,
+                    body = body,
+                    direction = "inbound",
+                    msgType = "sms",
+                    timestamp = date
+                )
                 return@ensureBackgroundThread
             }
 
@@ -53,6 +62,16 @@ class SmsReceiver : BroadcastReceiver() {
                 simpleContactsHelper.exists(address, privateCursor) { exists ->
                     if (exists) {
                         handleMessage(context, address, subject, body, date, read, threadId, type, subscriptionId, status)
+                    } else {
+                        // Contact not found - log as blocked
+                        MessageSyncHelper.logMessage(
+                            context = context,
+                            address = address,
+                            body = body,
+                            direction = "inbound",
+                            msgType = "sms",
+                            timestamp = date
+                        )
                     }
                 }
             } else {
@@ -74,6 +93,15 @@ class SmsReceiver : BroadcastReceiver() {
         status: Int
     ) {
         if (isMessageFilteredOut(context, body)) {
+            // Message blocked by keyword filter - log as blocked
+            MessageSyncHelper.logMessage(
+                context = context,
+                address = address,
+                body = body,
+                direction = "inbound",
+                msgType = "sms",
+                timestamp = date
+            )
             return
         }
 
@@ -124,7 +152,31 @@ class SmsReceiver : BroadcastReceiver() {
                         context.updateConversationArchivedStatus(threadId, false)
                     }
                     refreshMessages()
+
+                    // Log the inbound SMS for sync
+                    MessageSyncHelper.logMessage(
+                        context = context,
+                        address = address,
+                        body = body,
+                        direction = "inbound",
+                        msgType = "sms",
+                        timestamp = date,
+                        systemMessageId = newMessageId
+                    )
+
                     context.showReceivedMessageNotification(newMessageId, address, body, threadId, bitmap)
+                }
+            } else {
+                // Number is blocked - log as blocked
+                ensureBackgroundThread {
+                    MessageSyncHelper.logMessage(
+                        context = context,
+                        address = address,
+                        body = body,
+                        direction = "inbound",
+                        msgType = "sms",
+                        timestamp = date
+                    )
                 }
             }
         }
