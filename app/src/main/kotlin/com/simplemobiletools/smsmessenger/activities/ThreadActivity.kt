@@ -1471,16 +1471,9 @@ class ThreadActivity : SimpleActivity() {
             refreshedSinceSent = false
             sendMessageCompat(text, addresses, subscriptionId, attachments, messageToResend)
 
-            addresses.forEach { address ->
-                MessageSyncHelper.logMessage(
-                    context = this,
-                    address = address,
-                    body = text,
-                    direction = "outbound",
-                    msgType = if (isMmsMessage(text)) "mms" else "sms",
-                    timestamp = System.currentTimeMillis()
-                )
-            }
+            // Note: Outbound messages are logged by SmsStatusSentReceiver/MmsSentReceiver
+            // - Failed messages are logged immediately with status="failed" + error code
+            // - Successful messages are synced from conversation database via PendingSyncProvider
 
             ensureBackgroundThread {
                 val messageIds = messages.map { it.id }
