@@ -464,7 +464,8 @@ class ThreadActivity : SimpleActivity() {
             }
         }
 
-        SimpleContactsHelper(this).getAvailableContacts(false) { contacts ->
+        // Use DeviceContactsHelper to get contacts directly, excluding SIM contacts
+        DeviceContactsHelper(this).getDeviceContacts { contacts ->
             contacts.addAll(privateContacts)
             runOnUiThread {
                 val adapter = AutoCompleteTextViewAdapter(this, contacts)

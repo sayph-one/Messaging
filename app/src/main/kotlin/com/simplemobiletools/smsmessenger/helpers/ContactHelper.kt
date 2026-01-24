@@ -18,6 +18,50 @@ class ContactFilterHelper(private val context: Context) {
         "SIM"                           // Case variant
     )
 
+    /**
+     * Check if a contact is a SIM contact by looking up its raw contact ID.
+     * This is more reliable than phone number lookup when there are duplicate numbers.
+     */
+    fun isSimContact(rawContactId: Long): Boolean {
+        if (rawContactId <= 0) {
+            Log.d("ContactDebug", "Invalid rawContactId: $rawContactId, assuming not SIM")
+            return false
+        }
+
+        var isSimContact = false
+
+        context.contentResolver.query(
+            ContactsContract.RawContacts.CONTENT_URI,
+            arrayOf(ContactsContract.RawContacts.ACCOUNT_TYPE, ContactsContract.RawContacts.ACCOUNT_NAME),
+            "${ContactsContract.RawContacts._ID} = ?",
+            arrayOf(rawContactId.toString()),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val accountType = cursor.getString(0)
+                val accountName = cursor.getString(1)
+                Log.d("ContactDebug", "RawContact $rawContactId - AccountType: '$accountType', AccountName: '$accountName'")
+
+                // Check if account type is a SIM account type
+                isSimContact = accountType in simAccountTypes
+
+                // Also check if account name contains "sim" (some devices use this)
+                if (!isSimContact && accountName != null) {
+                    isSimContact = accountName.contains("sim", ignoreCase = true)
+                }
+
+                if (isSimContact) {
+                    Log.d("ContactDebug", "RawContact $rawContactId IS a SIM contact")
+                }
+            } else {
+                Log.d("ContactDebug", "No raw contact found for ID: $rawContactId")
+            }
+            Unit
+        }
+
+        return isSimContact
+    }
+
     fun isContactSaved(phoneNumber: String): Boolean {
         Log.d("ContactDebug", "=== Checking contact for number: $phoneNumber ===")
 
