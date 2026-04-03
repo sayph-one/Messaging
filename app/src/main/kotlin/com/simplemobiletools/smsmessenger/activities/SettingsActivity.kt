@@ -30,6 +30,10 @@ class SettingsActivity : SimpleActivity() {
     private val messagesFileType = "application/json"
     private val messageImportFileTypes = listOf("application/json", "application/xml", "text/xml")
 
+    // Demo mode trigger state
+    private var demoTapCount = 0
+    private var lastDemoTapTime = 0L
+
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +76,7 @@ class SettingsActivity : SimpleActivity() {
         setupAppPasswordProtection()
         setupMessagesExport()
         setupMessagesImport()
+        setupDemoModeTrigger()
         updateTextColors(binding.settingsNestedScrollview)
 
         if (blockedNumbersAtPause != -1 && blockedNumbersAtPause != getBlockedNumbers().hashCode()) {
@@ -330,6 +335,25 @@ class SettingsActivity : SimpleActivity() {
             RadioGroupDialog(this@SettingsActivity, items, checkedItemId) {
                 config.mmsFileSizeLimit = it as Long
                 settingsMmsFileSizeLimit.text = getMMSFileLimitText()
+            }
+        }
+    }
+
+    private fun setupDemoModeTrigger() = binding.apply {
+        settingsOutgoingMessagesLabel.setOnClickListener {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastDemoTapTime > 1000) {
+                demoTapCount = 0
+            }
+            demoTapCount++
+            lastDemoTapTime = currentTime
+
+            if (demoTapCount >= 7) {
+                demoTapCount = 0
+                config.demoMode = !config.demoMode
+                DemoDataProvider.clearSessionData()
+                val message = if (config.demoMode) "Demo mode enabled - restart app" else "Demo mode disabled - restart app"
+                toast(message)
             }
         }
     }

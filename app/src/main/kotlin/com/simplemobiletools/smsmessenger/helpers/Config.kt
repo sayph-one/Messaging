@@ -115,4 +115,12 @@ class Config(context: Context) : BaseConfig(context) {
     var isArchiveAvailable: Boolean
         get() = prefs.getBoolean(IS_ARCHIVE_AVAILABLE, true)
         set(isArchiveAvailable) = prefs.edit().putBoolean(IS_ARCHIVE_AVAILABLE, isArchiveAvailable).apply()
+
+    var demoMode: Boolean
+        get() = prefs.getBoolean(DEMO_MODE, false)
+        set(demoMode) = prefs.edit().putBoolean(DEMO_MODE, demoMode).apply()
+
+    var demoModeUnlocked: Boolean
+        get() = prefs.getBoolean(DEMO_MODE_UNLOCKED, false)
+        set(demoModeUnlocked) = prefs.edit().putBoolean(DEMO_MODE_UNLOCKED, demoModeUnlocked).apply()
 }

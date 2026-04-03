@@ -290,6 +290,15 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun getCachedConversations() {
+        // Demo mode: show demo conversations instead of real ones
+        if (config.demoMode) {
+            val demoConversations = DemoDataProvider.getConversations()
+            runOnUiThread {
+                setupConversations(demoConversations, cached = false)
+            }
+            return
+        }
+
         ensureBackgroundThread {
             val conversations = try {
                 conversationsDB.getNonArchived().toMutableList() as ArrayList<Conversation>

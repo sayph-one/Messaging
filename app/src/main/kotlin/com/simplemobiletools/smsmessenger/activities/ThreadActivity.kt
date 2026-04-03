@@ -314,21 +314,28 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupCachedMessages(callback: () -> Unit) {
         ensureBackgroundThread {
-            messages = try {
-                if (isRecycleBin) {
-                    messagesDB.getThreadMessagesFromRecycleBin(threadId)
-                } else {
-                    if (config.useRecycleBin) {
-                        messagesDB.getNonRecycledThreadMessages(threadId)
+            messages = if (config.demoMode) {
+                DemoDataProvider.getMessages(threadId)
+            } else {
+                try {
+                    if (isRecycleBin) {
+                        messagesDB.getThreadMessagesFromRecycleBin(threadId)
                     } else {
-                        messagesDB.getThreadMessages(threadId)
-                    }
-                }.toMutableList() as ArrayList<Message>
-            } catch (e: Exception) {
-                ArrayList()
+                        if (config.useRecycleBin) {
+                            messagesDB.getNonRecycledThreadMessages(threadId)
+                        } else {
+                            messagesDB.getThreadMessages(threadId)
+                        }
+                    }.toMutableList() as ArrayList<Message>
+                } catch (e: Exception) {
+                    ArrayList()
+                }
             }
-            clearExpiredScheduledMessages(threadId, messages)
-            messages.removeAll { it.isScheduled && it.millis() < System.currentTimeMillis() }
+
+            if (!config.demoMode) {
+                clearExpiredScheduledMessages(threadId, messages)
+                messages.removeAll { it.isScheduled && it.millis() < System.currentTimeMillis() }
+            }
 
             messages.sortBy { it.date }
             if (messages.size > MESSAGES_LIMIT) {
@@ -353,6 +360,18 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun setupThread() {
+        // In demo mode, skip real message fetching - we already have demo messages
+        if (config.demoMode) {
+            ensureBackgroundThread {
+                setupAdapter()
+                runOnUiThread {
+                    setupThreadTitle()
+                    setupSIMSelector()
+                }
+            }
+            return
+        }
+
         val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
         ensureBackgroundThread {
             privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
@@ -634,7 +653,11 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupConversation() {
         ensureBackgroundThread {
-            conversation = conversationsDB.getConversationWithThreadId(threadId)
+            conversation = if (config.demoMode) {
+                DemoDataProvider.getConversation(threadId)
+            } else {
+                conversationsDB.getConversationWithThreadId(threadId)
+            }
         }
     }
 
@@ -1391,6 +1414,15 @@ class ThreadActivity : SimpleActivity() {
         scrollToBottom()
 
         text = removeDiacriticsIfNeeded(text)
+
+        // Demo mode: store in-memory only, don't actually send
+        if (config.demoMode) {
+            DemoDataProvider.addSessionMessage(threadId, text)
+            messages = DemoDataProvider.getMessages(threadId)
+            setupAdapter()
+            clearCurrentMessage()
+            return
+        }
 
         val subscriptionId = availableSIMCards.getOrNull(currentSIMCardIndex)?.subscriptionId ?: SmsManager.getDefaultSmsSubscriptionId()
 
