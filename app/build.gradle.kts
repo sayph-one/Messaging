@@ -103,6 +103,7 @@ android {
 
 dependencies {
     implementation(libs.simple.mobile.tools.commons)
+    implementation("com.sayph.android:commons:0.1.0")
     implementation(libs.eventbus)
     implementation(libs.indicator.fast.scroll)
     implementation(libs.android.smsmms)

@@ -49,6 +49,7 @@ class MainActivity : SimpleActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         isMaterialActivity = true
         super.onCreate(savedInstanceState)
+        if (com.sayph.android.commons.SayphBlocker.checkAndBlock(this)) return
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
@@ -84,6 +85,7 @@ class MainActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (com.sayph.android.commons.SayphBlocker.checkAndBlock(this)) return
         updateMenuColors()
         refreshMenuItems()
 
