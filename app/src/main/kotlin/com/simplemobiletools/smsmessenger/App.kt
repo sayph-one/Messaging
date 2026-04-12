@@ -4,14 +4,19 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.graphics.Color
+import com.sayph.android.commons.SayphActivityGuard
+import com.sayph.android.commons.SayphNotificationReleaseDispatcher
 import com.simplemobiletools.commons.extensions.checkUseEnglish
 import com.simplemobiletools.commons.helpers.BaseConfig
+import com.simplemobiletools.smsmessenger.helpers.replaySuppressedSmsNotifications
 import androidx.core.graphics.toColorInt
 
 class App : Application() {
     @SuppressLint("UseKtx")
     override fun onCreate() {
         super.onCreate()
+        SayphActivityGuard.install(this)
+        SayphNotificationReleaseDispatcher.register { ctx -> replaySuppressedSmsNotifications(ctx) }
 
         val config = BaseConfig(this)
 //        config.primaryColor = "#132d4d".toColorInt()

@@ -855,6 +855,14 @@ fun Context.getThreadId(addresses: Set<String>): Long {
 }
 
 fun Context.showReceivedMessageNotification(messageId: Long, address: String, body: String, threadId: Long, bitmap: Bitmap?) {
+    // During downtime, drop the notification entirely. The downtime-end broadcast triggers
+    // DowntimeReplay which queries unread inbox messages since the suppression-start timestamp
+    // and re-invokes this function to post fresh notifications.
+    if (com.sayph.android.commons.SayphNotificationGuard.shouldSuppress(this)) {
+        com.sayph.android.commons.SayphNotificationGuard.markSuppressionStart(this)
+        return
+    }
+
     val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
     ensureBackgroundThread {
         val senderName = getNameFromAddress(address, privateCursor)
