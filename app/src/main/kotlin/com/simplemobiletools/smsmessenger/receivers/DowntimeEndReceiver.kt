@@ -9,14 +9,22 @@ import com.simplemobiletools.smsmessenger.helpers.replaySuppressedSmsNotificatio
  * Manifest-registered receiver that wakes the Messaging process on a downtime-end broadcast
  * and replays any SMS notifications that were suppressed while downtime was active.
  *
- * This exists alongside the in-process listener registered from [com.simplemobiletools.smsmessenger.App.onCreate]
- * so that replay still happens if the app was force-stopped or killed during downtime.
+ * Uses [goAsync] to keep the process alive while the synchronous replay function queries
+ * the SMS provider and posts notifications. Without this, Android would kill the process
+ * as soon as [onReceive] returns, before the replay work completes.
  */
 class DowntimeEndReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != "com.sayph.DOWNTIME_STATE_CHANGED") return
-        val isInDowntime = intent.getBooleanExtra("is_in_downtime", false)
-        if (isInDowntime) return
-        replaySuppressedSmsNotifications(context)
+        if (intent.getBooleanExtra("is_in_downtime", false)) return
+
+        val pendingResult = goAsync()
+        Thread {
+            try {
+                replaySuppressedSmsNotifications(context.applicationContext)
+            } finally {
+                pendingResult.finish()
+            }
+        }.start()
     }
 }
