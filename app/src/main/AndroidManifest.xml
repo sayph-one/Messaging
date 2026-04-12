@@ -188,13 +188,7 @@
 
         <service android:name="com.android.mms.transaction.TransactionService" />
 
-        <receiver
-            android:name=".receivers.DowntimeEndReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.sayph.DOWNTIME_STATE_CHANGED" />
-            </intent-filter>
-        </receiver>
+        <receiver android:name=".receivers.SmsReplayAlarmReceiver" android:exported="false" />
 
         <receiver android:name=".receivers.SmsStatusSentReceiver" />
 

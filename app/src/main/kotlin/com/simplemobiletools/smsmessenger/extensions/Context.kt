@@ -855,11 +855,12 @@ fun Context.getThreadId(addresses: Set<String>): Long {
 }
 
 fun Context.showReceivedMessageNotification(messageId: Long, address: String, body: String, threadId: Long, bitmap: Bitmap?) {
-    // During downtime, drop the notification entirely. The downtime-end broadcast triggers
-    // DowntimeReplay which queries unread inbox messages since the suppression-start timestamp
-    // and re-invokes this function to post fresh notifications.
+    // During downtime, drop the notification and schedule AlarmManager alarms to replay it
+    // when downtime ends. The end-time alarm fires at the scheduled end; a polling alarm fires
+    // every ~1 minute to catch early termination by a parent.
     if (com.sayph.android.commons.SayphNotificationGuard.shouldSuppress(this)) {
         com.sayph.android.commons.SayphNotificationGuard.markSuppressionStart(this)
+        com.simplemobiletools.smsmessenger.helpers.scheduleDowntimeReplayAlarms(this)
         return
     }
 
