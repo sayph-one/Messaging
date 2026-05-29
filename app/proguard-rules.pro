@@ -33,3 +33,5 @@
 -keep class com.simplemobiletools.commons.models.SimpleContact { *; }
 -keep class com.simplemobiletools.smsmessenger.models.Attachment { *; }
 -keep class com.simplemobiletools.smsmessenger.models.MessageAttachment { *; }
+
+-dontwarn javax.annotation.Nullable
