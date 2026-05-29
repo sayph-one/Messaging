@@ -13,7 +13,7 @@ eventbus = "3.3.1"
 #Room
 room = "2.6.0-alpha03"
 #Simple Mobile Tools
-simple-commons = "b72ded2a75"
+simple-commons = "37078b151c"
 android-smsmms = "c3e678befd"
 indicator-fast-scroll = "4524cd0b61"
 #Gradle
@@ -29,8 +29,8 @@ ez-vcard = "0.11.3"
 shortcut-badger = "1.1.22"
 #versioning
 app-version-appId = "com.simplemobiletools.smsmessenger"
-app-version-versionCode = "99" # update this for increment version knox
-app-version-versionName = "5.19.99"
+app-version-versionCode = "108" # update this for increment version knox
+app-version-versionName = "5.19.1074"
 [libraries]
 #AndroidX
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
