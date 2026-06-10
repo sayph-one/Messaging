@@ -20,15 +20,18 @@ class PendingSyncProvider : ContentProvider() {
         val AUTHORITY = "${BuildConfig.APPLICATION_ID}.pendingsync"
         const val PATH_UNSYNCED = "unsynced"
         const val PATH_MARK_SYNCED = "mark_synced"
+        const val PATH_WIPE_ALL = "wipe_all"
 
         private const val CODE_UNSYNCED = 1
         private const val CODE_MARK_SYNCED = 2
+        private const val CODE_WIPE_ALL = 3
 
         val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_UNSYNCED")
 
         private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, PATH_UNSYNCED, CODE_UNSYNCED)
             addURI(AUTHORITY, "$PATH_MARK_SYNCED/*", CODE_MARK_SYNCED)
+            addURI(AUTHORITY, PATH_WIPE_ALL, CODE_WIPE_ALL)
         }
     }
 
@@ -330,11 +333,50 @@ class PendingSyncProvider : ContentProvider() {
                     0
                 }
             }
+            CODE_WIPE_ALL -> {
+                wipeAllMessages()
+            }
             else -> {
                 Log.w(TAG, "Unknown URI for update: $uri")
                 0
             }
         }
+    }
+
+    /**
+     * Wipes every message on the device for a clean hand-off between users.
+     * Because this app is the default SMS app it may delete from the system
+     * Telephony provider directly. Also clears the app's own Room databases.
+     * Returns the number of system SMS/MMS rows deleted.
+     */
+    private fun wipeAllMessages(): Int {
+        var deleted = 0
+        val resolver = context?.contentResolver
+
+        try {
+            deleted += resolver?.delete(Telephony.Sms.CONTENT_URI, null, null) ?: 0
+            deleted += resolver?.delete(Telephony.Mms.CONTENT_URI, null, null) ?: 0
+            Log.d(TAG, "Deleted $deleted system SMS/MMS rows")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete system SMS/MMS", e)
+        }
+
+        try {
+            messagesDatabase.MessagesDao().deleteAll()
+            messagesDatabase.ConversationsDao().deleteAll()
+            Log.d(TAG, "Cleared messages and conversations databases")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear messages database", e)
+        }
+
+        try {
+            runBlocking { database.pendingMessageDao().deleteAllPending() }
+            Log.d(TAG, "Cleared pending-sync database")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear pending-sync database", e)
+        }
+
+        return deleted
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {

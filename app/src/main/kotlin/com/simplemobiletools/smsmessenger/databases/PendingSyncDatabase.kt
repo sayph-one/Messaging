@@ -61,6 +61,9 @@ interface PendingMessageDao {
 
     @Query("SELECT COUNT(*) FROM pending_messages WHERE synced = 0")
     suspend fun getUnsyncedCount(): Int
+
+    @Query("DELETE FROM pending_messages")
+    suspend fun deleteAllPending()
 }
 
 @Database(entities = [PendingMessage::class], version = 2, exportSchema = true)
